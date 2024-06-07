@@ -3,28 +3,40 @@ import { database } from "../firebase";
 import { ref, set, get } from "firebase/database";
 import { cartActions } from "./Cart-slice";
 
-export const fetchCardData = () => {
+export const fetchCartData = () => {
     return async (dispatch) => {
         const fetchRequest = async () => {
             const cartRef = ref(database, 'cart');
-            await get(cartRef);
-        }
-        
+            const snapshot = await get(cartRef);
+            if (snapshot.exists()) {
+                console.log('Cart data fetched successfully:', snapshot.val());
+                return snapshot.val();
+            } else {
+                console.log('No cart data found');
+                return {
+                    items: [],
+                    totalQuantity: 0
+                };
+            }
+        };
+
         try {
-            const cardData = await fetchRequest();
+            const cartData = await fetchRequest();
             dispatch(cartActions.replaceCart({
-                items: cardData.items || [],
-                totalQuantity: cardData.totalQuantity
+                items: cartData.items || [],
+                totalQuantity: cartData.totalQuantity
             }));
+            console.log('Cart data replaced successfully');
         } catch (error) {
+            console.error('Error fetching cart data:', error);
             dispatch(uiActions.showNotification({
                 status: 'error',
                 title: 'Error!',
                 message: 'Fetching cart data failed!'
             }));
         }
-    }
-}
+    };
+};
 
 export const sendCartData = (cart) => {
     return async (dispatch) => {
